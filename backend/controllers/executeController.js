@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { exec } = require("child_process");
 
-// Helper to generate a random filename
+
 function randomFilename(ext) {
   return `code_${Date.now()}_${Math.floor(Math.random() * 10000)}.${ext}`;
 }
@@ -34,18 +34,18 @@ exports.executeCode = async (req, res) => {
 
   let execCmd;
   if (language === "cpp") {
-    // Compile and run
+    
     execCmd = `g++ ${filename} -o ${filename}.out && ./${filename}.out`;
   } else if (language === "python") {
     execCmd = `python3 ${filename}`;
   } else if (language === "java") {
-    // Compile and run
+  
     const base = filename.replace(/\.java$/, "");
     execCmd = `javac ${filename} && java ${base}`;
   }
 
   exec(execCmd, { cwd: path.dirname(filepath) }, (error, stdout, stderr) => {
-    // Clean up temp files
+    
     try {
       fs.unlinkSync(filepath);
       if (language === "cpp") fs.unlinkSync(filepath + ".out");

@@ -48,20 +48,20 @@ const Project = () => {
       sender: user._id,
     };
 
-    // Check if this is an AI prompt
+    
     const isAIPrompt = message.includes("@ai");
 
     if (isAIPrompt) {
       setIsAIGenerating(true);
 
-      // Set a timeout to stop loading after 30 seconds
+      
       if (aiTimeoutRef.current) {
         clearTimeout(aiTimeoutRef.current);
       }
       aiTimeoutRef.current = setTimeout(() => {
         setIsAIGenerating(false);
         toast.error("AI response timed out. Please try again.");
-      }, 30000); // 30 seconds timeout
+      }, 30000); 
     }
 
     sendMessage("project-message", msg);
@@ -72,14 +72,14 @@ const Project = () => {
 
   const scrollToBottom = useCallback(() => {
     if (messageBox.current) {
-      // Add a small delay to ensure content is rendered
+      
       setTimeout(() => {
         messageBox.current.scrollTop = messageBox.current.scrollHeight;
       }, 100);
     }
   }, [messageBox]);
 
-  // Initialize WebContainer
+  
   useEffect(() => {
     if (!webContainer) {
       getWebContainer().then((container) => {
@@ -89,7 +89,7 @@ const Project = () => {
     }
   }, [webContainer]);
 
-  // Initialize Socket and fetch users (only once)
+  
   useEffect(() => {
     if (!projectId) return;
 
@@ -112,7 +112,7 @@ const Project = () => {
       fetchUsers();
     }
 
-    // Cleanup function to disconnect socket
+    
     return () => {
       if (window.socketinstance) {
         window.socketinstance.disconnect();
@@ -120,26 +120,26 @@ const Project = () => {
     };
   }, [projectId, userIds]);
 
-  // Set up message listeners (only once)
+  
   useEffect(() => {
     if (!projectId || !window.socketinstance) return;
 
     const socket = window.socketinstance;
 
     const handleProjectMessage = async (data) => {
-      // Create a unique message ID for deduplication
+      
       const messageId = `${data.sender}_${data.message}_${Date.now()}`;
 
-      // Check if we've already processed this message
+      
       if (messageIdsRef.current.has(messageId)) {
         console.log("Duplicate message ignored:", data.message);
         return;
       }
 
-      // Add to processed messages
+     
       messageIdsRef.current.add(messageId);
 
-      // Clean up old message IDs (keep only last 100)
+      
       if (messageIdsRef.current.size > 100) {
         const idsArray = Array.from(messageIdsRef.current);
         messageIdsRef.current.clear();
@@ -167,7 +167,7 @@ const Project = () => {
         }
       }
 
-      // Check if this is an AI response and stop loading
+      
       if (data.sender === "ai" || data.sender?._id === "ai") {
         setIsAIGenerating(false);
         if (aiTimeoutRef.current) {
@@ -183,20 +183,31 @@ const Project = () => {
     const handleCodeChange = (data) => {
       const { fileName, content, userId, userName, timestamp } = data;
 
-      // Prevent infinite loops by checking if this change is from current user
+      
       if (userId === user._id) return;
 
-      // Prevent rapid updates by checking timestamp
+     
       if (timestamp <= lastChangeTime) return;
 
       console.log(`📝 Code change from ${userName} in file ${fileName}`);
 
-      // Clear existing debounce timer for this file
+      
+      setUserCursors((prev) => ({
+        ...prev,
+        [userId]: {
+          fileName,
+          position: prev[userId]?.position || { lineNumber: 1, column: 1 },
+          userName,
+          timestamp: Date.now(),
+        },
+      }));
+
+      
       if (debounceTimersRef.current[fileName]) {
         clearTimeout(debounceTimersRef.current[fileName]);
       }
 
-      // Set a new debounce timer
+     
       const timer = setTimeout(() => {
         setIsReceivingChange(true);
         setLastChangeTime(timestamp);
@@ -212,12 +223,12 @@ const Project = () => {
           },
         }));
 
-        // Reset the flag after a short delay
+        
         setTimeout(() => setIsReceivingChange(false), 100);
 
-        // Clean up the timer
+        
         delete debounceTimersRef.current[fileName];
-      }, 300); // 300ms debounce
+      }, 300); 
 
       debounceTimersRef.current[fileName] = timer;
     };
@@ -225,7 +236,10 @@ const Project = () => {
     const handleCursorChange = (data) => {
       const { fileName, position, userId, userName } = data;
 
-      if (userId === user._id) return;
+      
+      console.log(
+        `🖱️ Cursor change from ${userName} at line ${position.lineNumber}, column ${position.column} in ${fileName}`
+      );
 
       setUserCursors((prev) => ({
         ...prev,
@@ -245,7 +259,7 @@ const Project = () => {
 
       console.log(`📁 ${userName} selected file: ${fileName}`);
 
-      // Update the current file if it's different
+    
       if (fileName !== currentFile) {
         setCurrentFile(fileName);
         setOpenFiles((prev) =>
@@ -254,13 +268,13 @@ const Project = () => {
       }
     };
 
-    // Add event listeners
+    
     socket.on("project-message", handleProjectMessage);
     socket.on("code-change", handleCodeChange);
     socket.on("cursor-change", handleCursorChange);
     socket.on("file-select", handleFileSelect);
 
-    // Cleanup function to remove listeners
+  
     return () => {
       socket.off("project-message", handleProjectMessage);
       socket.off("code-change", handleCodeChange);
@@ -288,7 +302,7 @@ const Project = () => {
     return () => webContainer.off("server-ready", handler);
   }, [webContainer]);
 
-  // Clean up old cursor data and debounce timers
+  
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
@@ -296,7 +310,7 @@ const Project = () => {
         const cleaned = {};
         Object.entries(prev).forEach(([userId, cursorData]) => {
           if (now - cursorData.timestamp < 10000) {
-            // Keep cursors for 10 seconds
+            
             cleaned[userId] = cursorData;
           }
         });
@@ -309,7 +323,7 @@ const Project = () => {
     };
   }, []);
 
-  // Clean up debounce timers and AI timeout on unmount
+  
   useEffect(() => {
     const timers = debounceTimersRef.current;
     return () => {
@@ -329,29 +343,42 @@ const Project = () => {
     );
   };
 
-  // Component to display user cursors
-  const UserCursorIndicator = ({ userName, fileName, position }) => {
+  
+  const UserCursorIndicator = ({ userName, fileName, position, userId }) => {
     if (fileName !== currentFile) return null;
+
+    const isCurrentUser = userId === user._id;
+    const cursorColor = isCurrentUser ? "bg-green-500" : "bg-blue-500";
+
+    console.log(
+      `🎯 Rendering cursor for ${userName} (${
+        isCurrentUser ? "ME" : "OTHER"
+      }) at line ${position.lineNumber}, column ${
+        position.column
+      } in ${fileName}`
+    );
 
     return (
       <div
         className="absolute pointer-events-none z-10"
         style={{
-          left: `${position.column * 8}px`, // Approximate character width
-          top: `${(position.lineNumber - 1) * 20}px`, // Approximate line height
+          left: `${position.column * 8}px`, 
+          top: `${(position.lineNumber - 1) * 20}px`, 
         }}
       >
         <div className="flex items-center">
-          <div className="w-0.5 h-5 bg-blue-500"></div>
-          <div className="ml-1 px-2 py-1 bg-blue-500 text-white text-xs rounded shadow-lg">
-            {userName}
+          <div className={`w-0.5 h-5 ${cursorColor}`}></div>
+          <div
+            className={`ml-1 px-2 py-1 ${cursorColor} text-white text-xs rounded shadow-lg`}
+          >
+            {isCurrentUser ? `${userName} (You)` : userName}
           </div>
         </div>
       </div>
     );
   };
 
-  // AI Loading Indicator Component
+  
   const AILoadingIndicator = () => (
     <div className="w-fit max-w-[90vw] md:max-w-[80%] px-2 py-2 rounded-md m-2 ml-auto flex flex-col bg-[#282828] text-white text-xs sm:text-sm md:text-base">
       <div className="sender text-xs md:text-sm">
@@ -479,9 +506,10 @@ const Project = () => {
                 Collaborators
               </div>
               {users.map((user) => {
+                const now = Date.now();
                 const isActive =
                   userCursors[user._id] &&
-                  Date.now() - userCursors[user._id].timestamp < 10000;
+                  now - userCursors[user._id].timestamp < 10000;
                 const currentFile = userCursors[user._id]?.fileName;
 
                 return (
@@ -521,10 +549,20 @@ const Project = () => {
           <input
             value={message}
             onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                if (message.trim() && !isAIGenerating) {
+                  send();
+                }
+              }
+            }}
             className="bg-[#1e1e1e] h-10 w-4/5 pl-2.5 border-[#00cf98d9] text-amber-50 rounded text-xs sm:text-sm md:text-base"
             type="text"
             placeholder={
-              isAIGenerating ? "AI is generating response..." : "Enter Message"
+              isAIGenerating
+                ? "AI is generating response..."
+                : "Enter Message"
             }
             disabled={isAIGenerating}
           />
@@ -560,7 +598,7 @@ const Project = () => {
                     prev.includes(file) ? prev : [...prev, file]
                   );
 
-                  // Broadcast file selection to other users
+                  
                   sendMessage("file-select", {
                     fileName: file,
                     userId: user._id,
@@ -589,9 +627,14 @@ const Project = () => {
               {/* File tabs */}
               <div className="flex overflow-x-auto">
                 {openFiles.map((item, index) => {
-                  // Find users currently editing this file
+                  
+                  const now = Date.now();
                   const editingUsers = Object.entries(userCursors)
-                    .filter(([, cursorData]) => cursorData.fileName === item)
+                    .filter(
+                      ([, cursorData]) =>
+                        cursorData.fileName === item &&
+                        now - cursorData.timestamp < 5000 
+                    )
                     .map(([, cursorData]) => cursorData.userName);
 
                   return (
@@ -600,7 +643,7 @@ const Project = () => {
                       onClick={() => {
                         setCurrentFile(item);
 
-                        // Broadcast file selection to other users
+                        
                         sendMessage("file-select", {
                           fileName: item,
                           userId: user._id,
@@ -637,7 +680,7 @@ const Project = () => {
                       return toast.error("WebContainer not ready");
                     if (!currentFile) return toast.error("No file selected");
 
-                    // Detect language by file extension
+                   
                     const ext = currentFile.split(".").pop();
                     let runCmd = null;
                     let runArgs = [];
@@ -706,10 +749,10 @@ const Project = () => {
                         console.log(`✅ ${preCmd} finished`);
                       }
 
-                      // Kill previous run process if any
+                      
                       if (runProcess) await runProcess.kill();
 
-                      // Run main command
+                      
                       const newRunProcess = await webContainer.spawn(
                         runCmd,
                         runArgs
@@ -775,15 +818,24 @@ const Project = () => {
             </div>
 
             <div className="bottom bg-white h-40 md:h-full flex flex-grow w-full relative">
-              {/* User cursor indicators */}
-              {Object.entries(userCursors).map(([userId, cursorData]) => (
-                <UserCursorIndicator
-                  key={userId}
-                  userName={cursorData.userName}
-                  fileName={cursorData.fileName}
-                  position={cursorData.position}
-                />
-              ))}
+             
+              {Object.entries(userCursors)
+                .filter(([, cursorData]) => {
+                  const now = Date.now();
+                  return (
+                    cursorData.fileName === currentFile &&
+                    now - cursorData.timestamp < 10000
+                  ); 
+                })
+                .map(([userId, cursorData]) => (
+                  <UserCursorIndicator
+                    key={userId}
+                    userId={userId}
+                    userName={cursorData.userName}
+                    fileName={cursorData.fileName}
+                    position={cursorData.position}
+                  />
+                ))}
 
               {fileTree[currentFile] ? (
                 <Editor
@@ -801,7 +853,7 @@ const Project = () => {
                       : "plaintext"
                   }
                   beforeMount={(monaco) => {
-                    // Disable all diagnostics
+                    
                     monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions(
                       {
                         noSemanticValidation: true,
@@ -814,11 +866,11 @@ const Project = () => {
                         noSyntaxValidation: true,
                       }
                     );
-                    // (Your C++ disabling code here, if any)
+                    
                   }}
                   value={fileTree[currentFile].file.contents}
                   onChange={(value) => {
-                    // Don't update if we're receiving a change from another user
+                    
                     if (isReceivingChange) return;
 
                     setFileTree({
@@ -832,7 +884,21 @@ const Project = () => {
                       },
                     });
 
-                    // Broadcast code change to other users
+                   
+                    setUserCursors((prev) => ({
+                      ...prev,
+                      [user._id]: {
+                        fileName: currentFile,
+                        position: prev[user._id]?.position || {
+                          lineNumber: 1,
+                          column: 1,
+                        },
+                        userName: user.name,
+                        timestamp: Date.now(),
+                      },
+                    }));
+
+                   
                     sendMessage("code-change", {
                       fileName: currentFile,
                       content: value,
@@ -841,8 +907,11 @@ const Project = () => {
                     });
                   }}
                   onMount={(editor) => {
-                    // Set up cursor position tracking
+                    
                     editor.onDidChangeCursorPosition((e) => {
+                      console.log(
+                        `🖱️ My cursor moved to line ${e.position.lineNumber}, column ${e.position.column} in ${currentFile}`
+                      );
                       sendMessage("cursor-change", {
                         fileName: currentFile,
                         position: e.position,

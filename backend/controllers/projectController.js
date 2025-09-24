@@ -1,7 +1,7 @@
 import projectModel from "../models/projectModel.js";
 import userModel from "./../models/userModel.js";
 
-//create project
+
 
 const createProject = async (req, res) => {
   const name = req.body.name;

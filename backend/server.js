@@ -24,7 +24,7 @@ io.use(async (socket, next) => {
   try {
     let token;
 
-    // Prefer token passed via auth object
+    
     if (socket.handshake.auth?.token) {
       token = socket.handshake.auth.token;
     } else if (socket.handshake.headers?.authorization) {
@@ -37,7 +37,7 @@ io.use(async (socket, next) => {
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
       return next(new Error("Invalid ProjectId"));
     }
-    //made a project that is binded uniquely to a project from DB
+   
     socket.project = await projectModel.findById(projectId);
 
     if (!token) {
@@ -96,11 +96,11 @@ io.on("connection", (socket) => {
     });
   });
 
-  // Handle cursor position changes
+ 
   socket.on("cursor-change", (data) => {
     const { fileName, position, userId, userName } = data;
 
-    // Broadcast cursor position to all other users in the room
+    
     socket.broadcast.to(socket.roomId).emit("cursor-change", {
       fileName,
       position,
@@ -110,11 +110,11 @@ io.on("connection", (socket) => {
     });
   });
 
-  // Handle file selection changes
+ 
   socket.on("file-select", (data) => {
     const { fileName, userId, userName } = data;
 
-    // Broadcast file selection to all other users in the room
+    
     socket.broadcast.to(socket.roomId).emit("file-select", {
       fileName,
       userId,
