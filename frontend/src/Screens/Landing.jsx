@@ -28,7 +28,7 @@ const Landing = () => {
     try {
       if (currState === "Login") {
         const res = await axios.post(
-          `http://localhost:8080/user/login`,
+          `https://roommate-2.onrender.com/user/login`,
           {
             email: form.email,
             password: form.password,
@@ -51,7 +51,7 @@ const Landing = () => {
       } else {
         // Sign Up
         const res = await axios.post(
-          `http://localhost:8080/user/signup`,
+          `https://roommate-2.onrender.com/user/signup`,
           form
         );
         if (!res.data.success) {
