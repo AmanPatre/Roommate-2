@@ -18,7 +18,7 @@ const Signup = () => {
 
     try {
       const res = await axios.post(
-        `http://localhost:8080/user/signup`,
+        `https://roommate-2.onrender.com/user/signup`,
         form
       );
       if (!res.data.success) {
