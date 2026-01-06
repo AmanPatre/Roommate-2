@@ -55,6 +55,7 @@ const Home = () => {
       }
 
       toast.success(res.data.message);
+      window.location.reload();
     } catch (error) {
       console.log(error);
     }
@@ -72,7 +73,7 @@ const Home = () => {
         }
       );
       if (!res.data.success) {
-        return axios.post(res.data.message);
+        return toast.error(res.data.message);
       }
 
       setProjects(res.data.project);

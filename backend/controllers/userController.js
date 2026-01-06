@@ -11,6 +11,7 @@ const createToken = (id) => {
 // signup
 
 const signUp = async (req, res) => {
+  console.log("SignUp Request Body:", req.body);
   const name = req.body.name;
   const email = req.body.email;
   const password = req.body.password;
@@ -44,7 +45,7 @@ const signUp = async (req, res) => {
     await newUser.save();
     const token = createToken(newUser._id);
 
-    res.send({ success: true, message: "New User created", token: token , data : newUser });
+    res.send({ success: true, message: "New User created", token: token, data: newUser });
   } catch (error) {
     res.send({ success: false, message: "Some error occured" });
     console.log(error);
@@ -74,7 +75,7 @@ const login = async (req, res) => {
     }
 
     const token = createToken(user._id);
-    res.json({ success: true, message: "Login Successfull", token: token , data : user});
+    res.json({ success: true, message: "Login Successfull", token: token, data: user });
   } catch (error) {
     res.json({ success: false, message: "Some Error occured" });
     console.log("Error");
@@ -89,20 +90,20 @@ const profile = async (req, res) => {
   try {
 
     const user = await userModel.findById(id);
-    if(!user){
-      return res.json({success : false , message : "User not found "})
+    if (!user) {
+      return res.json({ success: false, message: "User not found " })
     }
 
-    res.json({success : true , data:{name : user.name , email : user.email , _id : user._id} });
+    res.json({ success: true, data: { name: user.name, email: user.email, _id: user._id } });
 
 
-    }
-
-   
-  catch (error) {
-    res.json({success : false , message : error});
   }
-  
+
+
+  catch (error) {
+    res.json({ success: false, message: error });
+  }
+
 };
 
 //logout

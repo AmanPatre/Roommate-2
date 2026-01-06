@@ -1,6 +1,6 @@
 import axios from "axios";
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import collabIcon from "../assets/people.png";
 import sendIcon from "../assets/send.svg";
@@ -14,8 +14,16 @@ import { getWebContainer } from "../config/webContainer";
 
 const Project = () => {
   const location = useLocation();
+  const Navigate = useNavigate();
   const { projectId, userIds = [] } = location.state || {};
   const [users, setUsers] = useState([]);
+
+  useEffect(() => {
+    if (!projectId) {
+      toast.error("Invalid Project Access");
+      Navigate("/home");
+    }
+  }, [projectId, Navigate]);
   const [sidepnl, showsidepnl] = useState(false);
   const [message, setMessage] = useState("");
   const { user } = useUser();
@@ -48,20 +56,20 @@ const Project = () => {
       sender: user._id,
     };
 
-    
+
     const isAIPrompt = message.includes("@ai");
 
     if (isAIPrompt) {
       setIsAIGenerating(true);
 
-      
+
       if (aiTimeoutRef.current) {
         clearTimeout(aiTimeoutRef.current);
       }
       aiTimeoutRef.current = setTimeout(() => {
         setIsAIGenerating(false);
         toast.error("AI response timed out. Please try again.");
-      }, 30000); 
+      }, 30000);
     }
 
     sendMessage("project-message", msg);
@@ -72,14 +80,14 @@ const Project = () => {
 
   const scrollToBottom = useCallback(() => {
     if (messageBox.current) {
-      
+
       setTimeout(() => {
         messageBox.current.scrollTop = messageBox.current.scrollHeight;
       }, 100);
     }
   }, [messageBox]);
 
-  
+
   useEffect(() => {
     if (!webContainer) {
       getWebContainer().then((container) => {
@@ -89,7 +97,7 @@ const Project = () => {
     }
   }, [webContainer]);
 
-  
+
   useEffect(() => {
     if (!projectId) return;
 
@@ -112,7 +120,7 @@ const Project = () => {
       fetchUsers();
     }
 
-    
+
     return () => {
       if (window.socketinstance) {
         window.socketinstance.disconnect();
@@ -120,26 +128,26 @@ const Project = () => {
     };
   }, [projectId, userIds]);
 
-  
+
   useEffect(() => {
     if (!projectId || !window.socketinstance) return;
 
     const socket = window.socketinstance;
 
     const handleProjectMessage = async (data) => {
-      
+
       const messageId = `${data.sender}_${data.message}_${Date.now()}`;
 
-      
+
       if (messageIdsRef.current.has(messageId)) {
         console.log("Duplicate message ignored:", data.message);
         return;
       }
 
-     
+
       messageIdsRef.current.add(messageId);
 
-      
+
       if (messageIdsRef.current.size > 100) {
         const idsArray = Array.from(messageIdsRef.current);
         messageIdsRef.current.clear();
@@ -167,7 +175,7 @@ const Project = () => {
         }
       }
 
-      
+
       if (data.sender === "ai" || data.sender?._id === "ai") {
         setIsAIGenerating(false);
         if (aiTimeoutRef.current) {
@@ -183,15 +191,15 @@ const Project = () => {
     const handleCodeChange = (data) => {
       const { fileName, content, userId, userName, timestamp } = data;
 
-      
+
       if (userId === user._id) return;
 
-     
+
       if (timestamp <= lastChangeTime) return;
 
       console.log(`📝 Code change from ${userName} in file ${fileName}`);
 
-      
+
       setUserCursors((prev) => ({
         ...prev,
         [userId]: {
@@ -202,12 +210,12 @@ const Project = () => {
         },
       }));
 
-      
+
       if (debounceTimersRef.current[fileName]) {
         clearTimeout(debounceTimersRef.current[fileName]);
       }
 
-     
+
       const timer = setTimeout(() => {
         setIsReceivingChange(true);
         setLastChangeTime(timestamp);
@@ -223,12 +231,12 @@ const Project = () => {
           },
         }));
 
-        
+
         setTimeout(() => setIsReceivingChange(false), 100);
 
-        
+
         delete debounceTimersRef.current[fileName];
-      }, 300); 
+      }, 300);
 
       debounceTimersRef.current[fileName] = timer;
     };
@@ -236,7 +244,7 @@ const Project = () => {
     const handleCursorChange = (data) => {
       const { fileName, position, userId, userName } = data;
 
-      
+
       console.log(
         `🖱️ Cursor change from ${userName} at line ${position.lineNumber}, column ${position.column} in ${fileName}`
       );
@@ -259,7 +267,7 @@ const Project = () => {
 
       console.log(`📁 ${userName} selected file: ${fileName}`);
 
-    
+
       if (fileName !== currentFile) {
         setCurrentFile(fileName);
         setOpenFiles((prev) =>
@@ -268,13 +276,13 @@ const Project = () => {
       }
     };
 
-    
+
     socket.on("project-message", handleProjectMessage);
     socket.on("code-change", handleCodeChange);
     socket.on("cursor-change", handleCursorChange);
     socket.on("file-select", handleFileSelect);
 
-  
+
     return () => {
       socket.off("project-message", handleProjectMessage);
       socket.off("code-change", handleCodeChange);
@@ -298,11 +306,13 @@ const Project = () => {
       setIframeURL(url);
     };
 
-    webContainer.on("server-ready", handler);
-    return () => webContainer.off("server-ready", handler);
+    const unsubscribe = webContainer.on("server-ready", handler);
+    return () => {
+      unsubscribe();
+    };
   }, [webContainer]);
 
-  
+
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
@@ -310,7 +320,7 @@ const Project = () => {
         const cleaned = {};
         Object.entries(prev).forEach(([userId, cursorData]) => {
           if (now - cursorData.timestamp < 10000) {
-            
+
             cleaned[userId] = cursorData;
           }
         });
@@ -323,7 +333,7 @@ const Project = () => {
     };
   }, []);
 
-  
+
   useEffect(() => {
     const timers = debounceTimersRef.current;
     return () => {
@@ -343,7 +353,7 @@ const Project = () => {
     );
   };
 
-  
+
   const UserCursorIndicator = ({ userName, fileName, position, userId }) => {
     if (fileName !== currentFile) return null;
 
@@ -351,10 +361,8 @@ const Project = () => {
     const cursorColor = isCurrentUser ? "bg-green-500" : "bg-blue-500";
 
     console.log(
-      `🎯 Rendering cursor for ${userName} (${
-        isCurrentUser ? "ME" : "OTHER"
-      }) at line ${position.lineNumber}, column ${
-        position.column
+      `🎯 Rendering cursor for ${userName} (${isCurrentUser ? "ME" : "OTHER"
+      }) at line ${position.lineNumber}, column ${position.column
       } in ${fileName}`
     );
 
@@ -362,8 +370,8 @@ const Project = () => {
       <div
         className="absolute pointer-events-none z-10"
         style={{
-          left: `${position.column * 8}px`, 
-          top: `${(position.lineNumber - 1) * 20}px`, 
+          left: `${position.column * 8}px`,
+          top: `${(position.lineNumber - 1) * 20}px`,
         }}
       >
         <div className="flex items-center">
@@ -378,7 +386,7 @@ const Project = () => {
     );
   };
 
-  
+
   const AILoadingIndicator = () => (
     <div className="w-fit max-w-[90vw] md:max-w-[80%] px-2 py-2 rounded-md m-2 ml-auto flex flex-col bg-[#282828] text-white text-xs sm:text-sm md:text-base">
       <div className="sender text-xs md:text-sm">
@@ -497,9 +505,8 @@ const Project = () => {
 
           {/* Collaborator Side Panel */}
           <div
-            className={`sidepanel w-[90vw] sm:w-[80vw] md:w-[80%] h-full absolute top-0 left-0 bg-[#1e1e1e] transition-transform duration-300 ease-in-out z-20 ${
-              sidepnl ? "translate-x-0" : "-translate-x-full"
-            }`}
+            className={`sidepanel w-[90vw] sm:w-[80vw] md:w-[80%] h-full absolute top-0 left-0 bg-[#1e1e1e] transition-transform duration-300 ease-in-out z-20 ${sidepnl ? "translate-x-0" : "-translate-x-full"
+              }`}
           >
             <div className="collaborators flex flex-col gap-3 p-3 ">
               <div className="w-full rounded text-xs p-2 bg-black text-white text-center">
@@ -515,11 +522,10 @@ const Project = () => {
                 return (
                   <div
                     key={user._id}
-                    className={`w-full rounded text-xs p-2 flex items-center gap-2 ${
-                      isActive
-                        ? "bg-green-100 border border-green-400"
-                        : "bg-white"
-                    }`}
+                    className={`w-full rounded text-xs p-2 flex items-center gap-2 ${isActive
+                      ? "bg-green-100 border border-green-400"
+                      : "bg-white"
+                      }`}
                   >
                     <div className="relative">
                       <img src={profIcon} alt="" className="w-6 h-6" />
@@ -569,11 +575,10 @@ const Project = () => {
           <button
             onClick={send}
             disabled={isAIGenerating}
-            className={`w-8 h-8 flex items-center justify-center ${
-              isAIGenerating
-                ? "cursor-not-allowed opacity-50"
-                : "cursor-pointer"
-            }`}
+            className={`w-8 h-8 flex items-center justify-center ${isAIGenerating
+              ? "cursor-not-allowed opacity-50"
+              : "cursor-pointer"
+              }`}
           >
             {isAIGenerating ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -598,7 +603,7 @@ const Project = () => {
                     prev.includes(file) ? prev : [...prev, file]
                   );
 
-                  
+
                   sendMessage("file-select", {
                     fileName: file,
                     userId: user._id,
@@ -627,13 +632,13 @@ const Project = () => {
               {/* File tabs */}
               <div className="flex overflow-x-auto">
                 {openFiles.map((item, index) => {
-                  
+
                   const now = Date.now();
                   const editingUsers = Object.entries(userCursors)
                     .filter(
                       ([, cursorData]) =>
                         cursorData.fileName === item &&
-                        now - cursorData.timestamp < 5000 
+                        now - cursorData.timestamp < 5000
                     )
                     .map(([, cursorData]) => cursorData.userName);
 
@@ -643,18 +648,17 @@ const Project = () => {
                       onClick={() => {
                         setCurrentFile(item);
 
-                        
+
                         sendMessage("file-select", {
                           fileName: item,
                           userId: user._id,
                           userName: user.name,
                         });
                       }}
-                      className={`px-2 py-1 text-xs sm:text-sm whitespace-nowrap font-medium rounded-t relative ${
-                        currentFile === item
-                          ? "bg-[#252526] text-white border-b-2 border-[#1ce3ad]"
-                          : "bg-[#1e1e1e] text-gray-400 hover:bg-[#2d2d2d]"
-                      }`}
+                      className={`px-2 py-1 text-xs sm:text-sm whitespace-nowrap font-medium rounded-t relative ${currentFile === item
+                        ? "bg-[#252526] text-white border-b-2 border-[#1ce3ad]"
+                        : "bg-[#1e1e1e] text-gray-400 hover:bg-[#2d2d2d]"
+                        }`}
                     >
                       <div className="flex items-center gap-1">
                         <span>{item}</span>
@@ -680,7 +684,7 @@ const Project = () => {
                       return toast.error("WebContainer not ready");
                     if (!currentFile) return toast.error("No file selected");
 
-                   
+
                     const ext = currentFile.split(".").pop();
                     let runCmd = null;
                     let runArgs = [];
@@ -749,10 +753,10 @@ const Project = () => {
                         console.log(`✅ ${preCmd} finished`);
                       }
 
-                      
+
                       if (runProcess) await runProcess.kill();
 
-                      
+
                       const newRunProcess = await webContainer.spawn(
                         runCmd,
                         runArgs
@@ -775,11 +779,10 @@ const Project = () => {
                       setIsRunning(false);
                     }
                   }}
-                  className={`${
-                    isRunning
-                      ? "bg-gray-500 cursor-not-allowed"
-                      : "bg-[#1cdfabce] hover:bg-green-700"
-                  } text-white px-2 sm:px-4 py-1 rounded shadow flex items-center justify-center text-xs sm:text-sm`}
+                  className={`${isRunning
+                    ? "bg-gray-500 cursor-not-allowed"
+                    : "bg-[#1cdfabce] hover:bg-green-700"
+                    } text-white px-2 sm:px-4 py-1 rounded shadow flex items-center justify-center text-xs sm:text-sm`}
                   disabled={isRunning}
                 >
                   {isRunning ? (
@@ -818,14 +821,14 @@ const Project = () => {
             </div>
 
             <div className="bottom bg-white h-40 md:h-full flex flex-grow w-full relative">
-             
+
               {Object.entries(userCursors)
                 .filter(([, cursorData]) => {
                   const now = Date.now();
                   return (
                     cursorData.fileName === currentFile &&
                     now - cursorData.timestamp < 10000
-                  ); 
+                  );
                 })
                 .map(([userId, cursorData]) => (
                   <UserCursorIndicator
@@ -845,15 +848,15 @@ const Project = () => {
                     currentFile.endsWith(".js")
                       ? "javascript"
                       : currentFile.endsWith(".json")
-                      ? "json"
-                      : currentFile.endsWith(".css")
-                      ? "css"
-                      : currentFile.endsWith(".cpp")
-                      ? "cpp"
-                      : "plaintext"
+                        ? "json"
+                        : currentFile.endsWith(".css")
+                          ? "css"
+                          : currentFile.endsWith(".cpp")
+                            ? "cpp"
+                            : "plaintext"
                   }
                   beforeMount={(monaco) => {
-                    
+
                     monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions(
                       {
                         noSemanticValidation: true,
@@ -866,11 +869,11 @@ const Project = () => {
                         noSyntaxValidation: true,
                       }
                     );
-                    
+
                   }}
                   value={fileTree[currentFile].file.contents}
                   onChange={(value) => {
-                    
+
                     if (isReceivingChange) return;
 
                     setFileTree({
@@ -884,7 +887,7 @@ const Project = () => {
                       },
                     });
 
-                   
+
                     setUserCursors((prev) => ({
                       ...prev,
                       [user._id]: {
@@ -898,7 +901,7 @@ const Project = () => {
                       },
                     }));
 
-                   
+
                     sendMessage("code-change", {
                       fileName: currentFile,
                       content: value,
@@ -907,7 +910,7 @@ const Project = () => {
                     });
                   }}
                   onMount={(editor) => {
-                    
+
                     editor.onDidChangeCursorPosition((e) => {
                       console.log(
                         `🖱️ My cursor moved to line ${e.position.lineNumber}, column ${e.position.column} in ${currentFile}`

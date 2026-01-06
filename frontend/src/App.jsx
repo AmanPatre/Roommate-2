@@ -1,6 +1,7 @@
 import Approute from "./Approutes/Approute"
 import { UserProvider } from "./context/userContext"
 import { useState } from "react";
+import ErrorBoundary from "./ErrorBoundary";
 
 
 function App() {
@@ -8,10 +9,12 @@ function App() {
 
   return (
     <>
-    <UserProvider>
-    <Approute/>
-    </UserProvider>
-    
+      <UserProvider>
+        <ErrorBoundary>
+          <Approute />
+        </ErrorBoundary>
+      </UserProvider>
+
 
 
     </>

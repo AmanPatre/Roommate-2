@@ -51,7 +51,7 @@ const Landing = () => {
       } else {
         // Sign Up
         const res = await axios.post(
-          `http://localhost:8080/user/register`,
+          `http://localhost:8080/user/signup`,
           form
         );
         if (!res.data.success) {
@@ -88,9 +88,8 @@ const Landing = () => {
   return (
     <div className="main_container h-[100vh] w-[100vw] bg-black">
       <div
-        className={` w-[50vw] h-[100%] absolute flex flex-col justify-between text-white  p-5  transition-transform duration-300 ease-in-out bg-[#1e1e1e]  ${
-          showLeftSidebar ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={` w-[50vw] h-[100%] absolute flex flex-col justify-between text-white  p-5  transition-transform duration-300 ease-in-out bg-[#1e1e1e]  ${showLeftSidebar ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         <div
           onClick={() => handleBurger()}
@@ -234,9 +233,8 @@ const Landing = () => {
           </div>
         </div>
         <div
-          className={`flex flex-col p-5 justify-between items-center text-white side_screen fixed right-0 w-[70vw] sm:w-[40vw] lg:w-[20vw] ] bg-[#1e1e1e] rounded-l-2xl h-[92vh] transition-transform duration-300 ease-in-out ${
-            sideScreen ? "-translate-x-0" : "translate-x-full"
-          }`}
+          className={`flex flex-col p-5 justify-between items-center text-white side_screen fixed right-0 w-[70vw] sm:w-[40vw] lg:w-[20vw] ] bg-[#1e1e1e] rounded-l-2xl h-[92vh] transition-transform duration-300 ease-in-out ${sideScreen ? "-translate-x-0" : "translate-x-full"
+            }`}
         >
           <div>
             <div className="profile_icon">

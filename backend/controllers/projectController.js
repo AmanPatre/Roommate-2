@@ -60,19 +60,20 @@ const addUser = async (req, res) => {
   }
 
   try {
-
+    console.log("Join Project Request - ProjectID:", proj_id, "UserID:", userID);
     const project = await projectModel.findById(proj_id);
 
     if (!project) {
       return res.json({ success: false, message: "Project not found" });
     }
 
-    
-    if (project.users.includes(userID)) {
+
+    if (project.users.some(u => u.toString() === userID)) {
+      console.log("User already in project:", userID);
       return res.json({ success: false, message: "User already present in the project" });
     }
 
- 
+
     const updatedProject = await projectModel.findByIdAndUpdate(
       proj_id,
       { $addToSet: { users: userID } },
@@ -121,5 +122,5 @@ const addfiletree = async (req, res) => {
 };
 
 
-export { createProject, getProject, addUser , addfiletree };
+export { createProject, getProject, addUser, addfiletree };
 
