@@ -18,7 +18,7 @@ const Home = () => {
     e.preventDefault();
     try {
       const res = await axios.post(
-        `http://localhost:8080/project/createProject`,
+        `https://roommate-2.onrender.com/project/createProject`,
         { name: pname },
         {
           headers: {
@@ -41,7 +41,7 @@ const Home = () => {
 
     try {
       const res = await axios.post(
-        `http://localhost:8080/project/adduser`,
+        `https://roommate-2.onrender.com/project/adduser`,
         { proj_id: pid },
         {
           headers: {
@@ -64,7 +64,7 @@ const Home = () => {
   const getProjects = async () => {
     try {
       const res = await axios.post(
-        `http://localhost:8080/project/getproject`,
+        `https://roommate-2.onrender.com/project/getproject`,
         {},
         {
           headers: {
