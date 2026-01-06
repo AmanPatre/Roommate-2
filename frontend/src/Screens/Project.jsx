@@ -107,7 +107,7 @@ const Project = () => {
       try {
         const responses = await Promise.all(
           userIds.map((id) =>
-            axios.post(`http://localhost:8080/user/profile`, { id })
+            axios.post(`https://roommate-2.onrender.com/user/profile`, { id })
           )
         );
         setUsers(responses.map((res) => res.data.data));
@@ -422,7 +422,7 @@ const Project = () => {
 
     try {
       const res = await axios.post(
-        `http://localhost:8080/project/addFiletree`,
+        `https://roommate-2.onrender.com/project/addFiletree`,
         {
           proj_id: projectId,
           filetree: ft,
