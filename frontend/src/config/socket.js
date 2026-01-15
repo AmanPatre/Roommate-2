@@ -8,7 +8,7 @@ const initializeSocket = (projectId) => {
     socketinstance.disconnect();
   }
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const API_BASE_URL = "https://roommate-2.onrender.com";
   socketinstance = socket(API_BASE_URL, {
     auth: {
       token: localStorage.getItem("token"),
